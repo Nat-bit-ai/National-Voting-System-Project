@@ -7,15 +7,18 @@ public abstract class BaseFrame extends JFrame {
     protected BaseFrame(String title, int width, int height) {
         super(title);
         setSize(width, height);
-        setMinimumSize(new Dimension(Math.min(width, 900), Math.min(height, 620)));
+        setMinimumSize(new Dimension(900, 600));
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setResizable(true);
+        setBackground(AppTheme.getCanvasBackground());
     }
 
     protected abstract JComponent buildContent();
 
     protected void initializeFrame() {
         setContentPane(buildContent());
+        setVisible(true);
     }
 
     protected void showError(Exception ex) {

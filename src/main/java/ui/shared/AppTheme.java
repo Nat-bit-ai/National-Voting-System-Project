@@ -9,272 +9,402 @@ import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
 
 public final class AppTheme {
-    // ColorHunt Dark Theme
-public static final Color GREEN = new Color(0, 173, 181);       // #00ADB5
-public static final Color GREEN_DARK = new Color(0, 140, 147);
+    // Color Hunt Palette - https://colorhunt.co/palette/6096b493bfcfbdcdd6eee9da
+    // Color 1: #6096B4 - Muted Blue
+    public static final Color COLOR_1 = new Color(0x6096B4);
+    // Color 2: #93BFCF - Light Blue  
+    public static final Color COLOR_2 = new Color(0x93BFCF);
+    // Color 3: #BDCDD6 - Pale Blue
+    public static final Color COLOR_3 = new Color(0xBDCDD6);
+    // Color 4: #EEE9DA - Cream/Beige
+    public static final Color COLOR_4 = new Color(0xEEE9DA);
 
-public static final Color GOLD = new Color(0, 173, 181);
-public static final Color GOLD_SOFT = new Color(57, 62, 70);
+    // Command Prompt Theme
+    public static final Color TERMINAL_BG = new Color(12, 12, 12);           // Dark terminal background
+    public static final Color TERMINAL_TEXT = new Color(0, 255, 0);          // Bright green text
+    public static final Color TERMINAL_ACCENT = new Color(0, 200, 0);        // Darker green
+    public static final Color TERMINAL_BORDER = new Color(50, 50, 50);       // Dark gray border
 
-public static final Color RED = new Color(255, 107, 107);
-public static final Color RED_SOFT = new Color(57, 62, 70);
+    // Light Mode - Using palette colors
+    public static final Color LIGHT_BG = TERMINAL_BG;                        // Dark terminal background
+    public static final Color LIGHT_SURFACE = new Color(20, 20, 20);         // Slightly lighter than BG
 
-public static final Color INK = new Color(238, 238, 238);       // #EEEEEE
-public static final Color MUTED = new Color(180, 180, 180);
+    // Text Colors
+    public static final Color TEXT_DARK = TERMINAL_TEXT;                     // Green text
+    public static final Color TEXT_LIGHT = Color.WHITE;
+    public static final Color TEXT_MUTED = new Color(0, 150, 0);             // Darker green
 
-public static final Color CANVAS = new Color(34, 40, 49);       // #222831
-public static final Color SURFACE = new Color(57, 62, 70);      // #393E46
-public static final Color SURFACE_ALT = new Color(48, 53, 60);
+    // Accent Colors from Palette
+    public static final Color PRIMARY = COLOR_1;                             // #6096B4 - Main accent
+    public static final Color PRIMARY_LIGHT = COLOR_2;                       // #93BFCF - Light variant
+    public static final Color SECONDARY = COLOR_3;                           // #BDCDD6 - Secondary
+    
+    // Status Colors
+    public static final Color SUCCESS = new Color(0, 255, 0);                // Bright green
+    public static final Color ERROR = new Color(255, 100, 100);              // Red
+    public static final Color WARNING = new Color(255, 200, 0);              // Yellow
+    public static final Color INFO = TERMINAL_TEXT;                          // Green
 
-public static final Color BORDER = new Color(80, 85, 95);
-public static final Color BORDER_STRONG = new Color(100, 105, 115);
+    // Legacy color names for backward compatibility
+    public static final Color GREEN = TERMINAL_TEXT;
+    public static final Color GREEN_DARK = TERMINAL_ACCENT;
+    public static final Color GOLD = TERMINAL_TEXT;
+    public static final Color GOLD_SOFT = TERMINAL_BORDER;
+    public static final Color RED = ERROR;
+    public static final Color RED_SOFT = new Color(100, 50, 50);
+    public static final Color INK = TERMINAL_TEXT;
+    public static final Color MUTED = TEXT_MUTED;
+    public static final Color CANVAS = TERMINAL_BG;
+    public static final Color SURFACE = LIGHT_SURFACE;
+    public static final Color SURFACE_ALT = new Color(30, 30, 30);
+    public static final Color BORDER = TERMINAL_BORDER;
+    public static final Color BORDER_STRONG = new Color(80, 80, 80);
+    public static final Color SELECTED = TERMINAL_TEXT;
 
-public static final Color SELECTED = new Color(0, 173, 181);
-
-    private static final Font UI = new Font("Segoe UI", Font.PLAIN, 13);
-    private static final Font UI_MEDIUM = new Font("Segoe UI Semibold", Font.PLAIN, 13);
-    private static final Font UI_BOLD = new Font("Segoe UI", Font.BOLD, 13);
+    private static final Font TERMINAL_FONT = new Font("Courier New", Font.BOLD, 13);
+    private static final Font TERMINAL_BOLD = new Font("Courier New", Font.BOLD, 14);
+    private static final Font TERMINAL_LARGE = new Font("Courier New", Font.BOLD, 24);
 
     private AppTheme() {
     }
 
+    public static Color getCanvasBackground() {
+        return TERMINAL_BG;
+    }
+
+    public static Color getSurfaceBackground() {
+        return LIGHT_SURFACE;
+    }
+
+    public static Color getSurfaceAlt() {
+        return new Color(30, 30, 30);
+    }
+
+    public static Color getTextColor() {
+        return TERMINAL_TEXT;
+    }
+
+    public static Color getMutedTextColor() {
+        return TEXT_MUTED;
+    }
+
+    public static Color getPrimaryAccent() {
+        return PRIMARY;
+    }
+
+    public static Color getPrimaryAccentLight() {
+        return PRIMARY_LIGHT;
+    }
+
+    public static Color getSecondaryAccent() {
+        return SECONDARY;
+    }
+
+    public static Color getBorderColor() {
+        return TERMINAL_BORDER;
+    }
+
+    public static Color getBorderStrongColor() {
+        return new Color(80, 80, 80);
+    }
+
     public static void install() {
-        UIManager.put("Panel.background", CANVAS);
-        UIManager.put("OptionPane.background", CANVAS);
-        UIManager.put("OptionPane.messageFont", UI);
-        UIManager.put("Button.font", UI_BOLD);
-        UIManager.put("Button.background", SURFACE);
-        UIManager.put("Button.foreground", INK);
+        UIManager.put("Panel.background", getCanvasBackground());
+        UIManager.put("OptionPane.background", getCanvasBackground());
+        UIManager.put("OptionPane.messageFont", TERMINAL_FONT);
+        UIManager.put("Button.font", TERMINAL_BOLD);
+        UIManager.put("Button.background", getSurfaceBackground());
+        UIManager.put("Button.foreground", getTextColor());
         UIManager.put("Button.focus", new ColorUIResource(new Color(0, 0, 0, 0)));
-        UIManager.put("Label.font", UI);
-        UIManager.put("TextField.font", UI);
-        UIManager.put("PasswordField.font", UI);
-        UIManager.put("TextField.selectionBackground", SELECTED);
-        UIManager.put("PasswordField.selectionBackground", SELECTED);
-        UIManager.put("ComboBox.font", UI);
-        UIManager.put("CheckBox.font", UI);
-        UIManager.put("CheckBox.background", SURFACE);
-        UIManager.put("Table.font", UI);
-        UIManager.put("Table.background", SURFACE);
-        UIManager.put("Table.alternateRowColor", SURFACE_ALT);
-        UIManager.put("Table.selectionBackground", SELECTED);
-        UIManager.put("Table.selectionForeground", INK);
-        UIManager.put("TableHeader.background", SURFACE_ALT);
-        UIManager.put("TableHeader.foreground", MUTED);
-        UIManager.put("TabbedPane.font", UI_BOLD);
-        UIManager.put("TabbedPane.background", CANVAS);
-        UIManager.put("TabbedPane.selected", SURFACE);
+        UIManager.put("Label.font", TERMINAL_FONT);
+        UIManager.put("Label.foreground", getTextColor());
+        UIManager.put("TextField.font", TERMINAL_FONT);
+        UIManager.put("PasswordField.font", TERMINAL_FONT);
+        UIManager.put("TextField.selectionBackground", PRIMARY);
+        UIManager.put("PasswordField.selectionBackground", PRIMARY);
+        UIManager.put("ComboBox.font", TERMINAL_FONT);
+        UIManager.put("CheckBox.font", TERMINAL_FONT);
+        UIManager.put("CheckBox.background", getSurfaceBackground());
+        UIManager.put("CheckBox.foreground", getTextColor());
+        UIManager.put("Table.font", TERMINAL_FONT);
+        UIManager.put("Table.background", getSurfaceBackground());
+        UIManager.put("Table.alternateRowColor", getSurfaceAlt());
+        UIManager.put("Table.selectionBackground", PRIMARY);
+        UIManager.put("Table.selectionForeground", Color.WHITE);
+        UIManager.put("TableHeader.background", getSurfaceAlt());
+        UIManager.put("TableHeader.foreground", getMutedTextColor());
+        UIManager.put("TabbedPane.font", TERMINAL_BOLD);
+        UIManager.put("TabbedPane.background", getCanvasBackground());
+        UIManager.put("TabbedPane.selected", getSurfaceBackground());
         UIManager.put("ScrollPane.border", BorderFactory.createEmptyBorder());
-        UIManager.put("Label.foreground", INK);
 
-UIManager.put("TextField.background", SURFACE);
-UIManager.put("TextField.foreground", INK);
+        UIManager.put("TextField.background", getSurfaceBackground());
+        UIManager.put("TextField.foreground", getTextColor());
 
-UIManager.put("PasswordField.background", SURFACE);
-UIManager.put("PasswordField.foreground", INK);
+        UIManager.put("PasswordField.background", getSurfaceBackground());
+        UIManager.put("PasswordField.foreground", getTextColor());
 
-UIManager.put("ComboBox.background", SURFACE);
-UIManager.put("ComboBox.foreground", INK);
+        UIManager.put("ComboBox.background", getSurfaceBackground());
+        UIManager.put("ComboBox.foreground", getTextColor());
 
-UIManager.put("Table.foreground", INK);
-
-UIManager.put("TableHeader.background", SURFACE);
-UIManager.put("TableHeader.foreground", INK);
-
-UIManager.put("TabbedPane.foreground", INK);
-
-UIManager.put("OptionPane.foreground", INK);
+        UIManager.put("Table.foreground", getTextColor());
+        UIManager.put("TableHeader.background", getSurfaceBackground());
+        UIManager.put("TableHeader.foreground", getTextColor());
+        UIManager.put("TabbedPane.foreground", getTextColor());
+        UIManager.put("OptionPane.foreground", getTextColor());
     }
 
     public static JButton primaryButton(String text) {
-        JButton button = new JButton(text);
-        button.setBackground(GREEN);
-        button.setForeground(Color.WHITE);
+        JButton button = new JButton("▶ " + text);
+        button.setFont(TERMINAL_BOLD);
+        button.setBackground(TERMINAL_ACCENT);
+        button.setForeground(Color.BLACK);
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         button.setFocusPainted(false);
-        button.setBorder(buttonBorder(GREEN_DARK));
+        button.setBorder(BorderFactory.createCompoundBorder(
+                new TerminalBorder(TERMINAL_TEXT, 4),
+                new EmptyBorder(8, 15, 8, 15)
+        ));
         button.setOpaque(true);
+
         button.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                button.setBackground(TERMINAL_TEXT);
+                button.setForeground(TERMINAL_BG);
+            }
 
-    @Override
-    public void mouseEntered(java.awt.event.MouseEvent e) {
-        button.setBackground(new Color(0, 190, 200));
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                button.setBackground(TERMINAL_ACCENT);
+                button.setForeground(Color.BLACK);
+            }
+        });
+
+        return button;
     }
 
-    @Override
-    public void mouseExited(java.awt.event.MouseEvent e) {
-        button.setBackground(GREEN);
-    }
-});
-        button.setPreferredSize(new Dimension(140, 42));
+    public static JButton outlineButton(String text) {
+        JButton button = new JButton("$ " + text);
+        button.setFont(TERMINAL_BOLD);
+        button.setBackground(new Color(0, 0, 0, 0));
+        button.setForeground(TERMINAL_TEXT);
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        button.setFocusPainted(false);
+        button.setOpaque(false);
+        button.setBorder(BorderFactory.createCompoundBorder(
+                new TerminalBorder(TERMINAL_TEXT, 4),
+                new EmptyBorder(8, 15, 8, 15)
+        ));
+
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                button.setBackground(new Color(0, 100, 0, 100));
+                button.setOpaque(true);
+            }
+
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                button.setBackground(new Color(0, 0, 0, 0));
+                button.setOpaque(false);
+            }
+        });
+
         return button;
     }
 
     public static JButton secondaryButton(String text) {
         JButton button = new JButton(text);
-        button.setBackground(SURFACE);
-        button.setForeground(INK);
+        button.setFont(TERMINAL_BOLD);
+        button.setBackground(getSurfaceBackground());
+        button.setForeground(getTextColor());
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         button.setFocusPainted(false);
-        button.setBorder(buttonBorder(BORDER_STRONG));
-        button.setPreferredSize(new Dimension(140, 42));
+        button.setBorder(BorderFactory.createCompoundBorder(
+                new TerminalBorder(TERMINAL_BORDER, 4),
+                new EmptyBorder(8, 15, 8, 15)
+        ));
+        button.setOpaque(true);
+
         button.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                button.setBackground(new Color(50, 50, 50));
+            }
 
-    @Override
-    public void mouseEntered(java.awt.event.MouseEvent e) {
-        button.setBackground(new Color(70, 75, 85));
-    }
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                button.setBackground(getSurfaceBackground());
+            }
+        });
 
-    @Override
-    public void mouseExited(java.awt.event.MouseEvent e) {
-        button.setBackground(SURFACE);
-    }
-});
         return button;
     }
 
     public static JButton dangerButton(String text) {
-        JButton button = secondaryButton(text);
-        button.setForeground(RED);
-        button.setBackground(RED_SOFT);
-        button.setBorder(buttonBorder(new Color(244, 176, 178)));
+        JButton button = new JButton("✗ " + text);
+        button.setFont(TERMINAL_BOLD);
+        button.setForeground(Color.WHITE);
+        button.setBackground(ERROR);
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        button.setFocusPainted(false);
+        button.setBorder(BorderFactory.createCompoundBorder(
+                new TerminalBorder(ERROR, 4),
+                new EmptyBorder(8, 15, 8, 15)
+        ));
+        button.setOpaque(true);
+
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                button.setBackground(new Color(255, 150, 150));
+            }
+
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                button.setBackground(ERROR);
+            }
+        });
+
         return button;
     }
 
     public static JLabel title(String text) {
-        JLabel label = new JLabel(text);
-        label.setFont(new Font("Segoe UI", Font.BOLD, 25));
-        label.setForeground(INK);
+        JLabel label = new JLabel("┌─► " + text);
+        label.setFont(new Font("Courier New", Font.BOLD, 24));
+        label.setForeground(getTextColor());
         return label;
     }
 
     public static JLabel heroTitle(String text) {
-        JLabel label = new JLabel(text);
-        label.setFont(new Font("Segoe UI", Font.BOLD, 34));
-        label.setForeground(Color.WHITE);
+        JLabel label = new JLabel("╔═══ " + text + " ═══╗");
+        label.setFont(new Font("Courier New", Font.BOLD, 32));
+        label.setForeground(TERMINAL_TEXT);
         return label;
     }
 
     public static JLabel sectionTitle(String text) {
-        JLabel label = new JLabel(text);
-        label.setFont(new Font("Segoe UI", Font.BOLD, 17));
-        label.setForeground(INK);
+        JLabel label = new JLabel("└─► " + text);
+        label.setFont(new Font("Courier New", Font.BOLD, 18));
+        label.setForeground(getTextColor());
+        return label;
+    }
+
+    public static JLabel bodyText(String text) {
+        JLabel label = new JLabel("│ " + text);
+        label.setFont(TERMINAL_FONT);
+        label.setForeground(getMutedTextColor());
         return label;
     }
 
     public static JLabel mutedLabel(String text) {
-        JLabel label = new JLabel(text);
-        label.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        label.setForeground(MUTED);
+        JLabel label = new JLabel("// " + text);
+        label.setFont(new Font("Courier New", Font.PLAIN, 11));
+        label.setForeground(getMutedTextColor());
         return label;
     }
 
     public static JLabel eyebrow(String text) {
-        JLabel label = new JLabel(text.toUpperCase());
-        label.setFont(new Font("Segoe UI", Font.BOLD, 11));
-        label.setForeground(GREEN);
+        JLabel label = new JLabel("[" + text.toUpperCase() + "]");
+        label.setFont(new Font("Courier New", Font.BOLD, 11));
+        label.setForeground(TERMINAL_TEXT);
         return label;
     }
 
     public static JPanel cardPanel() {
         JPanel panel = new JPanel();
-        panel.setBackground(SURFACE);
-        panel.setBorder(cardBorder());
+        panel.setBackground(getSurfaceBackground());
+        panel.setBorder(BorderFactory.createCompoundBorder(
+                new TerminalBorder(TERMINAL_BORDER, 8),
+                new EmptyBorder(15, 15, 15, 15)
+        ));
         return panel;
     }
 
     public static JPanel heroPanel() {
-        return new GradientPanel(GREEN_DARK, GREEN);
+        return new TerminalPanel();
     }
 
     public static void styleInput(JComponent input) {
-        input.setFont(UI);
-        input.setForeground(INK);
-        input.setBackground(SURFACE);
+        input.setFont(TERMINAL_FONT);
+        input.setForeground(getTextColor());
+        input.setBackground(getSurfaceBackground());
+
         if (input instanceof JCheckBox checkBox) {
             checkBox.setOpaque(false);
+            checkBox.setForeground(getTextColor());
             checkBox.setBorder(new EmptyBorder(8, 0, 8, 0));
             return;
         }
-        input.setBorder(inputBorder());
+
+        input.setBorder(BorderFactory.createCompoundBorder(
+                new TerminalBorder(TERMINAL_TEXT, 6),
+                new EmptyBorder(8, 10, 8, 10)
+        ));
+
         if (input instanceof JTextField textField) {
             if (textField.getColumns() == 0) {
                 textField.setColumns(22);
             }
-            textField.setCaretColor(GREEN);
+            textField.setCaretColor(TERMINAL_TEXT);
         }
     }
 
     public static void styleTable(JTable table) {
-        table.setRowHeight(34);
-        table.setGridColor(new Color(235, 240, 246));
+        table.setRowHeight(35);
+        table.setGridColor(TERMINAL_BORDER);
         table.setShowVerticalLines(false);
         table.setIntercellSpacing(new Dimension(0, 0));
-        table.setSelectionBackground(SELECTED);
-        table.setSelectionForeground(INK);
-        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
-        table.getTableHeader().setPreferredSize(new Dimension(0, 38));
-        table.getTableHeader().setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, BORDER));
+        table.setSelectionBackground(PRIMARY);
+        table.setSelectionForeground(Color.WHITE);
+        table.getTableHeader().setFont(new Font("Courier New", Font.BOLD, 12));
+        table.getTableHeader().setPreferredSize(new Dimension(0, 40));
+        table.getTableHeader().setBackground(getSurfaceAlt());
+        table.getTableHeader().setForeground(getTextColor());
+        table.getTableHeader().setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, TERMINAL_TEXT));
     }
 
     public static JScrollPane scrollPane(Component content) {
         JScrollPane scrollPane = new JScrollPane(content);
-        scrollPane.setBorder(cardBorder());
-        scrollPane.getViewport().setBackground(SURFACE);
+        scrollPane.setBorder(BorderFactory.createCompoundBorder(
+                new TerminalBorder(TERMINAL_BORDER, 8),
+                new EmptyBorder(8, 8, 8, 8)
+        ));
+        scrollPane.getViewport().setBackground(getSurfaceBackground());
+        
+        scrollPane.getVerticalScrollBar().setUI(new javax.swing.plaf.basic.BasicScrollBarUI() {
+            @Override
+            protected void configureScrollBarColors() {
+                this.thumbColor = TERMINAL_TEXT;
+                this.trackColor = TERMINAL_BG;
+            }
+        });
+        
         return scrollPane;
     }
 
-    private static Border cardBorder() {
-        return BorderFactory.createCompoundBorder(
-                new RoundedLineBorder(BORDER, 8),
-                new EmptyBorder(22, 24, 22, 24)
-        );
-    }
-
-    private static Border inputBorder() {
-        return BorderFactory.createCompoundBorder(
-                new RoundedLineBorder(BORDER_STRONG, 8),
-                new EmptyBorder(9, 11, 9, 11)
-        );
-    }
-
-    private static Border buttonBorder(Color line) {
-        return BorderFactory.createCompoundBorder(
-                new RoundedLineBorder(line, 8),
-                new EmptyBorder(10, 16, 10, 16)
-        );
-    }
-
-    private static final class GradientPanel extends JPanel {
-        private final Color start;
-        private final Color end;
-
-        private GradientPanel(Color start, Color end) {
-            this.start = start;
-            this.end = end;
-            setOpaque(false);
+    private static final class TerminalPanel extends JPanel {
+        private TerminalPanel() {
+            setOpaque(true);
+            setBackground(TERMINAL_BG);
+            setBorder(new TerminalBorder(TERMINAL_TEXT, 8));
         }
 
         @Override
         protected void paintComponent(Graphics graphics) {
+            super.paintComponent(graphics);
             Graphics2D g2 = (Graphics2D) graphics.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setPaint(new GradientPaint(0, 0, start, getWidth(), getHeight(), end));
-            g2.fillRect(0, 0, getWidth(), getHeight());
-            g2.setColor(new Color(255, 255, 255, 30));
-            g2.fillOval(getWidth() - 190, -80, 260, 260);
-            g2.setColor(new Color(246, 181, 55, 45));
-            g2.fillOval(-80, getHeight() - 110, 210, 210);
             g2.dispose();
-            super.paintComponent(graphics);
         }
     }
 
-    private static final class RoundedLineBorder extends AbstractBorder {
+    public static final class TerminalBorder extends AbstractBorder {
         private final Color color;
         private final int radius;
 
-        private RoundedLineBorder(Color color, int radius) {
+        public TerminalBorder(Color color, int radius) {
             this.color = color;
             this.radius = radius;
         }
@@ -284,18 +414,50 @@ UIManager.put("OptionPane.foreground", INK);
             Graphics2D g2 = (Graphics2D) graphics.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g2.setColor(color);
-            g2.draw(new RoundRectangle2D.Double(x + 0.5, y + 0.5, width - 1, height - 1, radius, radius));
+            g2.setStroke(new BasicStroke(2.0f));
+            g2.draw(new RoundRectangle2D.Double(x + 1, y + 1, width - 2, height - 2, radius, radius));
             g2.dispose();
         }
 
         @Override
         public Insets getBorderInsets(Component component) {
-            return new Insets(1, 1, 1, 1);
+            return new Insets(3, 3, 3, 3);
         }
 
         @Override
         public Insets getBorderInsets(Component component, Insets insets) {
-            insets.set(1, 1, 1, 1);
+            insets.set(3, 3, 3, 3);
+            return insets;
+        }
+    }
+
+    public static final class RoundedLineBorder extends AbstractBorder {
+        private final Color color;
+        private final int radius;
+
+        public RoundedLineBorder(Color color, int radius) {
+            this.color = color;
+            this.radius = radius;
+        }
+
+        @Override
+        public void paintBorder(Component component, Graphics graphics, int x, int y, int width, int height) {
+            Graphics2D g2 = (Graphics2D) graphics.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(color);
+            g2.setStroke(new BasicStroke(1.5f));
+            g2.draw(new RoundRectangle2D.Double(x + 0.75, y + 0.75, width - 1.5, height - 1.5, radius, radius));
+            g2.dispose();
+        }
+
+        @Override
+        public Insets getBorderInsets(Component component) {
+            return new Insets(2, 2, 2, 2);
+        }
+
+        @Override
+        public Insets getBorderInsets(Component component, Insets insets) {
+            insets.set(2, 2, 2, 2);
             return insets;
         }
     }
