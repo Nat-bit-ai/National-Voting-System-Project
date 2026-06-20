@@ -19,6 +19,10 @@ public class LoginFrame extends BaseFrame {
     private final JPasswordField passwordField = new JPasswordField();
     private final JComboBox<String> loginMode = new JComboBox<>(new String[]{"Voter", "Admin"});
     private JLabel logoLabel;
+    private JLabel typingLabel;
+    private Timer typingTimer;
+    private int typingIndex = 0;
+    private final String typingText = "┌─► Ethiopian National Digital Voting System ◄─┐";
 
     public LoginFrame() {
         super("National Digital Voting System", 1200, 750);
@@ -147,6 +151,18 @@ public class LoginFrame extends BaseFrame {
         logoLabel.setHorizontalAlignment(JLabel.CENTER);
         hero.add(logoLabel, gbc);
 
+        // Typing Effect Label
+        gbc.gridy++;
+        gbc.insets = new Insets(20, 0, 5, 0);
+        typingLabel = new JLabel("■");
+        typingLabel.setFont(new Font("Courier New", Font.BOLD, 18));
+        typingLabel.setForeground(AppTheme.getTextColor());
+        typingLabel.setHorizontalAlignment(JLabel.CENTER);
+        hero.add(typingLabel, gbc);
+
+        // Start typing effect
+        startTypingEffect();
+
         // Title with typing style
         gbc.gridy++;
         gbc.insets = new Insets(20, 0, 5, 0);
@@ -174,6 +190,39 @@ public class LoginFrame extends BaseFrame {
         hero.add(subtitle, gbc);
 
         return hero;
+    }
+
+    private void startTypingEffect() {
+        typingIndex = 0;
+        if (typingTimer != null) {
+            typingTimer.stop();
+        }
+
+        typingTimer = new Timer(50, e -> {
+            if (typingIndex <= typingText.length()) {
+                String displayText = typingText.substring(0, typingIndex) + "█";
+                typingLabel.setText(displayText);
+                typingIndex++;
+            } else {
+                ((Timer) e.getSource()).stop();
+                // Start blinking cursor after typing is done
+                startBlinkingCursor();
+            }
+        });
+        typingTimer.start();
+    }
+
+    private void startBlinkingCursor() {
+        typingLabel.setText(typingText + " █");
+        Timer blinkTimer = new Timer(500, e -> {
+            String current = typingLabel.getText();
+            if (current.endsWith(" █")) {
+                typingLabel.setText(typingText);
+            } else {
+                typingLabel.setText(typingText + " █");
+            }
+        });
+        blinkTimer.start();
     }
 
     private JPanel createFormSection() {
