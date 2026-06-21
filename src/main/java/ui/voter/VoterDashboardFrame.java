@@ -11,6 +11,7 @@ import util.SessionManager;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -20,7 +21,7 @@ import java.util.List;
 public class VoterDashboardFrame extends BaseFrame {
     private final Voter voter;
     private final VotingService votingService = new VotingService();
-    private final JPanel candidatePanel = new JPanel(new GridLayout(0, 2, 14, 14));
+    private final JPanel candidatePanel = new JPanel(new GridLayout(0, 2, 18, 18));
     private Election activeElection;
 
     public VoterDashboardFrame(Voter voter) {
@@ -45,9 +46,15 @@ public class VoterDashboardFrame extends BaseFrame {
         copy.add(AppTheme.title("Welcome, " + voter.getFullName()));
         copy.add(AppTheme.mutedLabel("Review the approved candidates and submit one secure vote."));
         top.add(copy, BorderLayout.WEST);
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        actions.setOpaque(false);
+        JButton theme = AppTheme.themeIconButton();
         JButton logout = AppTheme.secondaryButton("Logout");
+        theme.addActionListener(e -> toggleTheme());
         logout.addActionListener(e -> logout());
-        top.add(logout, BorderLayout.EAST);
+        actions.add(theme);
+        actions.add(logout);
+        top.add(actions, BorderLayout.EAST);
 
         candidatePanel.setOpaque(false);
         candidatePanel.setBorder(new EmptyBorder(10, 0, 10, 0));
@@ -77,34 +84,68 @@ public class VoterDashboardFrame extends BaseFrame {
         candidatePanel.repaint();
     }
 
+    @Override
+    protected void toggleTheme() {
+        AppTheme.setDarkMode(!AppTheme.isDarkMode());
+        setContentPane(buildContent());
+        loadCandidates();
+        revalidate();
+        repaint();
+        SwingUtilities.updateComponentTreeUI(this);
+    }
+
     private JPanel card(Candidate candidate) {
         JPanel card = AppTheme.cardPanel();
-        card.setLayout(new BorderLayout(12, 12));
+        card.setLayout(new BorderLayout(16, 14));
+        card.setBackground(AppTheme.SURFACE);
+        card.setPreferredSize(new Dimension(440, 260));
         JLabel name = new JLabel(candidate.getFullName());
-        name.setFont(new Font("Segoe UI", Font.BOLD, 19));
+        name.setFont(new Font(AppTheme.FONT_FAMILY, Font.BOLD, 22));
         name.setForeground(AppTheme.INK);
         JLabel party = new JLabel(candidate.getParty() == null ? "Independent" : candidate.getParty().getName());
         party.setForeground(AppTheme.MUTED);
-        party.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        JPanel copy = new JPanel(new GridLayout(2, 1, 0, 3));
+        party.setFont(new Font(AppTheme.FONT_FAMILY, Font.BOLD, 14));
+        JLabel prompt = AppTheme.mutedLabel("Tap vote when this is your confirmed choice.");
+        JPanel copy = new JPanel(new GridLayout(3, 1, 0, 5));
         copy.setOpaque(false);
         copy.add(name);
         copy.add(party);
+        copy.add(prompt);
         JButton vote = AppTheme.primaryButton("Vote");
         vote.addActionListener(e -> vote(candidate));
-        card.add(candidatePhoto(candidate), BorderLayout.WEST);
+
+        JPanel footer = new JPanel(new BorderLayout(10, 0));
+        footer.setOpaque(false);
+        footer.add(AppTheme.eyebrow("Verified candidate"), BorderLayout.WEST);
+        footer.add(vote, BorderLayout.EAST);
+
+        card.add(candidateMedia(candidate), BorderLayout.WEST);
         card.add(copy, BorderLayout.CENTER);
-        card.add(vote, BorderLayout.SOUTH);
+        card.add(footer, BorderLayout.SOUTH);
+        installCardHover(card);
         return card;
+    }
+
+    private JComponent candidateMedia(Candidate candidate) {
+        JPanel media = new JPanel(new BorderLayout(8, 8));
+        media.setOpaque(false);
+        media.setPreferredSize(new Dimension(190, 214));
+        media.add(candidatePhoto(candidate), BorderLayout.CENTER);
+        media.add(partyLogo(candidate), BorderLayout.SOUTH);
+        return media;
     }
 
     private JComponent candidatePhoto(Candidate candidate) {
         JLabel label = new JLabel(initials(candidate.getFullName()), SwingConstants.CENTER);
-        label.setPreferredSize(new Dimension(74, 74));
+        label.setPreferredSize(new Dimension(186, 164));
         label.setOpaque(true);
         label.setBackground(AppTheme.GOLD_SOFT);
         label.setForeground(AppTheme.GREEN_DARK);
-        label.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        label.setFont(new Font(AppTheme.FONT_FAMILY, Font.BOLD, 34));
+        label.setBorder(BorderFactory.createCompoundBorder(
+                new AppTheme.RoundedLineBorder(AppTheme.PALETTE_MAGENTA, 8),
+                new EmptyBorder(8, 8, 8, 8)
+        ));
         String path = candidate.getPhotoPath();
         if (path == null || path.isBlank()) {
             return label;
@@ -113,12 +154,76 @@ public class VoterDashboardFrame extends BaseFrame {
             BufferedImage image = ImageIO.read(new File(path));
             if (image != null) {
                 label.setText("");
-                label.setIcon(new ImageIcon(image.getScaledInstance(74, 74, Image.SCALE_SMOOTH)));
+                label.setIcon(fitIcon(image, 168, 146));
             }
         } catch (Exception ignored) {
             // Keep the initials fallback if the configured photo is missing.
         }
         return label;
+    }
+
+    private JComponent partyLogo(Candidate candidate) {
+        String partyName = candidate.getParty() == null ? "Independent" : candidate.getParty().getName();
+        JLabel label = new JLabel(initials(partyName), SwingConstants.CENTER);
+        label.setPreferredSize(new Dimension(186, 52));
+        label.setOpaque(true);
+        label.setBackground(AppTheme.SURFACE_ALT);
+        label.setForeground(AppTheme.PALETTE_MAGENTA);
+        label.setFont(new Font(AppTheme.FONT_FAMILY, Font.BOLD, 18));
+        label.setBorder(BorderFactory.createCompoundBorder(
+                new AppTheme.RoundedLineBorder(AppTheme.BORDER_STRONG, 8),
+                new EmptyBorder(6, 8, 6, 8)
+        ));
+
+        String path = candidate.getParty() == null ? null : candidate.getParty().getSymbolPath();
+        if (path == null || path.isBlank()) {
+            return label;
+        }
+        try {
+            BufferedImage image = ImageIO.read(new File(path));
+            if (image != null) {
+                label.setText("");
+                label.setIcon(fitIcon(image, 168, 38));
+            }
+        } catch (Exception ignored) {
+            // Keep the party initials fallback if the logo path is unavailable.
+        }
+        return label;
+    }
+
+    private ImageIcon fitIcon(BufferedImage image, int maxWidth, int maxHeight) {
+        double scale = Math.min(maxWidth / (double) image.getWidth(), maxHeight / (double) image.getHeight());
+        int width = Math.max(1, (int) Math.round(image.getWidth() * scale));
+        int height = Math.max(1, (int) Math.round(image.getHeight() * scale));
+        BufferedImage canvas = new BufferedImage(maxWidth, maxHeight, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = canvas.createGraphics();
+        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.drawImage(image, (maxWidth - width) / 2, (maxHeight - height) / 2, width, height, null);
+        g2.dispose();
+        return new ImageIcon(canvas);
+    }
+
+    private void installCardHover(JPanel card) {
+        Border normalBorder = card.getBorder();
+        Border hoverBorder = BorderFactory.createCompoundBorder(
+                new AppTheme.RoundedLineBorder(AppTheme.PALETTE_MAGENTA, 8),
+                new EmptyBorder(15, 15, 15, 15)
+        );
+        card.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        card.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                card.setBackground(AppTheme.SURFACE_ALT);
+                card.setBorder(hoverBorder);
+            }
+
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                card.setBackground(AppTheme.SURFACE);
+                card.setBorder(normalBorder);
+            }
+        });
     }
 
     private String initials(String name) {

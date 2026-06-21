@@ -67,6 +67,9 @@ public class RegisterFrame extends BaseFrame {
         gbc.gridy++;
         JButton back = AppTheme.secondaryButton("Back to login");
         form.add(back, gbc);
+        gbc.gridy++;
+        JButton theme = AppTheme.themeIconButton();
+        form.add(theme, gbc);
 
         scan.addActionListener(e -> scanQr());
         sendOtp.addActionListener(e -> generateOtp());
@@ -75,6 +78,7 @@ public class RegisterFrame extends BaseFrame {
             dispose();
             new LoginFrame().setVisible(true);
         });
+        theme.addActionListener(e -> toggleTheme());
         root.add(form, new GridBagConstraints());
         return root;
     }
@@ -83,7 +87,7 @@ public class RegisterFrame extends BaseFrame {
         JPanel panel = new JPanel(new BorderLayout(0, 4));
         panel.setOpaque(false);
         JLabel caption = new JLabel(label);
-        caption.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        caption.setFont(new Font(AppTheme.FONT_FAMILY, Font.BOLD, 12));
         caption.setForeground(AppTheme.INK);
         panel.add(caption, BorderLayout.NORTH);
         panel.add(field, BorderLayout.CENTER);

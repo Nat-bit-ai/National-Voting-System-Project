@@ -58,7 +58,7 @@ abstract class TablePanel extends JPanel {
         wrapper.setOpaque(false);
         AppTheme.styleInput(input);
         JLabel caption = new JLabel(label);
-        caption.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        caption.setFont(new Font(AppTheme.FONT_FAMILY, Font.BOLD, 12));
         caption.setForeground(AppTheme.INK);
         wrapper.add(caption, BorderLayout.NORTH);
         wrapper.add(input, BorderLayout.CENTER);

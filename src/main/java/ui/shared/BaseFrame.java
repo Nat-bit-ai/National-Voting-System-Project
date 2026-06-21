@@ -7,7 +7,7 @@ public abstract class BaseFrame extends JFrame {
     protected BaseFrame(String title, int width, int height) {
         super(title);
         setSize(width, height);
-        setMinimumSize(new Dimension(900, 600));
+        setMinimumSize(new Dimension(760, 520));
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setResizable(true);
@@ -19,6 +19,14 @@ public abstract class BaseFrame extends JFrame {
     protected void initializeFrame() {
         setContentPane(buildContent());
         setVisible(true);
+    }
+
+    protected void toggleTheme() {
+        AppTheme.setDarkMode(!AppTheme.isDarkMode());
+        setContentPane(buildContent());
+        revalidate();
+        repaint();
+        SwingUtilities.updateComponentTreeUI(this);
     }
 
     protected void showError(Exception ex) {

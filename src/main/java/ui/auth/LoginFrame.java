@@ -7,22 +7,30 @@ import ui.admin.AdminDashboardFrame;
 import ui.shared.AppTheme;
 import ui.shared.BaseFrame;
 import ui.voter.VoterDashboardFrame;
+import util.QRGenerator;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.geom.Ellipse2D;
+import java.awt.image.BufferedImage;
 import java.io.File;
+import java.util.prefs.Preferences;
 
 public class LoginFrame extends BaseFrame {
+    private static final String HERO_LINE = "Your vote, counted clearly and protected with confidence.";
+    private static final String NATIONAL_PORTAL_URL = "https://www.nebe.org.et";
+
     private final AuthService authService = new AuthService();
+    private final Preferences preferences = Preferences.userRoot().node(AppTheme.PREF_NODE);
     private final JTextField identityField = new JTextField();
     private final JPasswordField passwordField = new JPasswordField();
     private final JComboBox<String> loginMode = new JComboBox<>(new String[]{"Voter", "Admin"});
-    private JLabel logoLabel;
+    private CircularLogoLabel logoLabel;
     private JLabel typingLabel;
     private Timer typingTimer;
-    private int typingIndex = 0;
-    private final String typingText = "┌─► Ethiopian National Digital Voting System ◄─┐";
+    private boolean typingPlayed;
 
     public LoginFrame() {
         super("National Digital Voting System", 1200, 750);
@@ -34,103 +42,170 @@ public class LoginFrame extends BaseFrame {
     protected JComponent buildContent() {
         JPanel root = new JPanel(new BorderLayout());
         root.setBackground(AppTheme.getCanvasBackground());
-
-        // Navigation Bar
-        JPanel navbar = createNavbar();
-        root.add(navbar, BorderLayout.NORTH);
-
-        // Main Content - Responsive Layout
-        JPanel mainContent = createMainContent();
-        root.add(mainContent, BorderLayout.CENTER);
-
+        root.add(createNavbar(), BorderLayout.NORTH);
+        root.add(createMainContent(), BorderLayout.CENTER);
+        root.add(createPortalButtonPanel(), BorderLayout.SOUTH);
         return root;
     }
 
     private JPanel createNavbar() {
         JPanel navbar = new JPanel(new BorderLayout());
         navbar.setBackground(AppTheme.getSurfaceBackground());
-        navbar.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, AppTheme.getTextColor()));
+        navbar.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, AppTheme.getBorderColor()));
         navbar.setPreferredSize(new Dimension(0, 70));
 
-        // Logo/Brand with terminal style
-        JLabel brand = new JLabel("▓▒░ Ethiopian Voting System ░▒▓");
-        brand.setFont(new Font("Courier New", Font.BOLD, 16));
+        JLabel brand = new JLabel("Ethiopian Voting System");
+        brand.setFont(new Font(AppTheme.FONT_FAMILY, Font.BOLD, 17));
         brand.setForeground(AppTheme.getTextColor());
         brand.setBorder(new EmptyBorder(0, 20, 0, 0));
 
-        // Navigation buttons
-        JPanel navButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 15));
+        JPanel navButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 14, 16));
         navButtons.setBackground(AppTheme.getSurfaceBackground());
 
         JButton homeBtn = createNavButton("Home");
         JButton aboutBtn = createNavButton("About");
         JButton contactBtn = createNavButton("Contact");
+        JButton themeBtn = AppTheme.themeIconButton();
 
-        homeBtn.addActionListener(e -> {});
         aboutBtn.addActionListener(e -> openAboutPage());
         contactBtn.addActionListener(e -> openContactPage());
+        themeBtn.addActionListener(e -> toggleTheme());
 
         navButtons.add(homeBtn);
         navButtons.add(aboutBtn);
         navButtons.add(contactBtn);
+        navButtons.add(themeBtn);
 
         navbar.add(brand, BorderLayout.WEST);
         navbar.add(navButtons, BorderLayout.EAST);
-
         return navbar;
     }
 
     private JButton createNavButton(String text) {
-        JButton btn = new JButton("→ " + text);
-        btn.setFont(new Font("Courier New", Font.BOLD, 12));
-        btn.setBackground(new Color(0, 0, 0, 0));
+        JButton btn = new JButton(text);
+        btn.setFont(new Font(AppTheme.FONT_FAMILY, Font.BOLD, 12));
+        btn.setBackground(AppTheme.getSurfaceBackground());
         btn.setForeground(AppTheme.getTextColor());
         btn.setFocusPainted(false);
         btn.setBorderPainted(false);
-        btn.setOpaque(false);
+        btn.setOpaque(true);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        btn.setBorder(new EmptyBorder(5, 10, 5, 10));
-
+        btn.setBorder(new EmptyBorder(6, 10, 6, 10));
         btn.addMouseListener(new java.awt.event.MouseAdapter() {
-            private final javax.swing.border.Border underlineBorder = BorderFactory.createMatteBorder(0, 0, 3, 0, AppTheme.getMutedTextColor());
-            private final javax.swing.border.Border normalBorder = new EmptyBorder(5, 10, 5, 10);
-
             @Override
             public void mouseEntered(java.awt.event.MouseEvent e) {
-                btn.setBorder(underlineBorder);
-                btn.setForeground(AppTheme.getMutedTextColor());
+                btn.setForeground(AppTheme.getPrimaryAccent());
             }
 
             @Override
             public void mouseExited(java.awt.event.MouseEvent e) {
-                btn.setBorder(normalBorder);
                 btn.setForeground(AppTheme.getTextColor());
             }
         });
-
         return btn;
     }
 
+    private JPanel createPortalButtonPanel() {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 18, 10));
+        panel.setBackground(AppTheme.getCanvasBackground());
+        JButton qrButton = AppTheme.primaryButton("Portal QR");
+        qrButton.setToolTipText("Show the national voting portal QR code");
+        qrButton.addActionListener(e -> showPortalQr());
+        panel.add(qrButton);
+        return panel;
+    }
+
     private JPanel createMainContent() {
+        return new ResponsiveMainPanel(createHeroSection(), createFormSection());
+    }
+
+    private static final class ResponsiveMainPanel extends JPanel {
+        private final JPanel hero;
+        private final JPanel form;
+        private boolean stacked;
+
+        private ResponsiveMainPanel(JPanel hero, JPanel form) {
+            this.hero = hero;
+            this.form = form;
+            setBackground(AppTheme.getCanvasBackground());
+            setLayout(new GridBagLayout());
+            addComponentListener(new java.awt.event.ComponentAdapter() {
+                @Override
+                public void componentResized(java.awt.event.ComponentEvent e) {
+                    updateLayoutMode();
+                }
+            });
+            updateLayoutMode();
+        }
+
+        private void updateLayoutMode() {
+            boolean shouldStack = getWidth() > 0 && getWidth() < 900;
+            if (shouldStack == stacked && getComponentCount() > 0) {
+                return;
+            }
+            stacked = shouldStack;
+            removeAll();
+            setLayout(new GridBagLayout());
+
+            if (stacked) {
+                addStacked();
+            } else {
+                addColumns();
+            }
+
+            revalidate();
+            repaint();
+        }
+
+        private void addColumns() {
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.insets = new Insets(0, 0, 0, 0);
+            gbc.fill = GridBagConstraints.BOTH;
+            gbc.weighty = 1.0;
+            gbc.gridy = 0;
+
+            gbc.gridx = 0;
+            gbc.weightx = 0.56;
+            add(hero, gbc);
+
+            gbc.gridx = 1;
+            gbc.weightx = 0.44;
+            add(form, gbc);
+        }
+
+        private void addStacked() {
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.insets = new Insets(0, 0, 0, 0);
+            gbc.fill = GridBagConstraints.BOTH;
+            gbc.gridx = 0;
+            gbc.weightx = 1.0;
+
+            gbc.gridy = 0;
+            gbc.weighty = 0.35;
+            add(hero, gbc);
+
+            gbc.gridy = 1;
+            gbc.weighty = 0.65;
+            add(form, gbc);
+        }
+    }
+
+    private JPanel legacyTwoColumnMainContent() {
         JPanel main = new JPanel(new GridBagLayout());
         main.setBackground(AppTheme.getCanvasBackground());
-
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(0, 0, 0, 0);
         gbc.fill = GridBagConstraints.BOTH;
-        gbc.weightx = 0.5;
         gbc.weighty = 1.0;
-
-        // Hero Section - Left side
-        gbc.gridx = 0;
         gbc.gridy = 0;
+
+        gbc.gridx = 0;
+        gbc.weightx = 0.56;
         main.add(createHeroSection(), gbc);
 
-        // Form Section - Right side
         gbc.gridx = 1;
-        gbc.gridy = 0;
+        gbc.weightx = 0.44;
         main.add(createFormSection(), gbc);
-
         return main;
     }
 
@@ -140,89 +215,40 @@ public class LoginFrame extends BaseFrame {
         hero.setBorder(new EmptyBorder(40, 40, 40, 40));
 
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(15, 0, 15, 0);
+        gbc.insets = new Insets(12, 0, 12, 0);
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
 
-        // Logo
-        logoLabel = new JLabel();
-        logoLabel.setHorizontalAlignment(JLabel.CENTER);
+        logoLabel = new CircularLogoLabel();
+        logoLabel.setText("NDVS");
+        logoLabel.setFont(new Font(AppTheme.FONT_FAMILY, Font.BOLD, 18));
+        logoLabel.setForeground(AppTheme.getPrimaryAccent());
+        logoLabel.setPreferredSize(new Dimension(240, 240));
+        logoLabel.setBackground(AppTheme.GOLD_SOFT);
+        loadHomeLogo(homeLogoPath());
         hero.add(logoLabel, gbc);
 
-        // Typing Effect Label
         gbc.gridy++;
-        gbc.insets = new Insets(20, 0, 5, 0);
-        typingLabel = new JLabel("■");
-        typingLabel.setFont(new Font("Courier New", Font.BOLD, 18));
-        typingLabel.setForeground(AppTheme.getTextColor());
-        typingLabel.setHorizontalAlignment(JLabel.CENTER);
-        hero.add(typingLabel, gbc);
-
-        // Start typing effect
-        startTypingEffect();
-
-        // Title with typing style
-        gbc.gridy++;
-        gbc.insets = new Insets(20, 0, 5, 0);
-        JLabel mainTitle = new JLabel("$ system.init()");
-        mainTitle.setFont(new Font("Courier New", Font.BOLD, 22));
-        mainTitle.setForeground(AppTheme.getTextColor());
-        mainTitle.setHorizontalAlignment(JLabel.CENTER);
-        hero.add(mainTitle, gbc);
+        JLabel title = new JLabel("National Digital Voting System", JLabel.CENTER);
+        title.setFont(new Font(AppTheme.FONT_FAMILY, Font.BOLD, 30));
+        title.setForeground(AppTheme.getTextColor());
+        hero.add(title, gbc);
 
         gbc.gridy++;
-        gbc.insets = new Insets(5, 0, 10, 0);
-        JLabel titleCont = new JLabel("▓ VOTING PLATFORM INITIALIZED ▓");
-        titleCont.setFont(new Font("Courier New", Font.BOLD, 20));
-        titleCont.setForeground(AppTheme.getTextColor());
-        titleCont.setHorizontalAlignment(JLabel.CENTER);
-        hero.add(titleCont, gbc);
-
-        // Subtitle with command style
-        gbc.gridy++;
-        gbc.insets = new Insets(20, 20, 10, 20);
-        JLabel subtitle = new JLabel("<html><center>[INFO] Secure & Transparent<br>[INFO] Voting Platform v2.0<br>[INFO] Status: READY</center></html>");
-        subtitle.setFont(new Font("Courier New", Font.PLAIN, 12));
+        JLabel subtitle = new JLabel("<html><center>Register voters, manage ballots, and monitor live election results<br>from one focused national workspace.</center></html>", JLabel.CENTER);
+        subtitle.setFont(new Font(AppTheme.FONT_FAMILY, Font.PLAIN, 16));
         subtitle.setForeground(AppTheme.getMutedTextColor());
-        subtitle.setHorizontalAlignment(JLabel.CENTER);
         hero.add(subtitle, gbc);
 
+        gbc.gridy++;
+        typingLabel = new JLabel("", JLabel.CENTER);
+        typingLabel.setFont(new Font(AppTheme.FONT_FAMILY, Font.BOLD, 16));
+        typingLabel.setForeground(AppTheme.getPrimaryAccent());
+        hero.add(typingLabel, gbc);
+        startTypingEffect();
         return hero;
-    }
-
-    private void startTypingEffect() {
-        typingIndex = 0;
-        if (typingTimer != null) {
-            typingTimer.stop();
-        }
-
-        typingTimer = new Timer(50, e -> {
-            if (typingIndex <= typingText.length()) {
-                String displayText = typingText.substring(0, typingIndex) + "█";
-                typingLabel.setText(displayText);
-                typingIndex++;
-            } else {
-                ((Timer) e.getSource()).stop();
-                // Start blinking cursor after typing is done
-                startBlinkingCursor();
-            }
-        });
-        typingTimer.start();
-    }
-
-    private void startBlinkingCursor() {
-        typingLabel.setText(typingText + " █");
-        Timer blinkTimer = new Timer(500, e -> {
-            String current = typingLabel.getText();
-            if (current.endsWith(" █")) {
-                typingLabel.setText(typingText);
-            } else {
-                typingLabel.setText(typingText + " █");
-            }
-        });
-        blinkTimer.start();
     }
 
     private JPanel createFormSection() {
@@ -236,116 +262,125 @@ public class LoginFrame extends BaseFrame {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
 
-        JPanel form = new JPanel(new GridBagLayout());
-        form.setBackground(AppTheme.getSurfaceBackground());
-        form.setBorder(BorderFactory.createCompoundBorder(
-                new AppTheme.TerminalBorder(AppTheme.getTextColor(), 8),
-                new EmptyBorder(30, 30, 30, 30)
-        ));
+        JPanel form = AppTheme.cardPanel();
+        form.setLayout(new GridBagLayout());
 
         GridBagConstraints formGbc = new GridBagConstraints();
-        formGbc.insets = new Insets(10, 0, 10, 0);
+        formGbc.insets = new Insets(9, 0, 9, 0);
         formGbc.fill = GridBagConstraints.HORIZONTAL;
         formGbc.gridx = 0;
         formGbc.gridy = 0;
         formGbc.weightx = 1.0;
 
-        // Form Title with command prompt style
-        JLabel formTitle = new JLabel("user@voting-system:~$ login");
-        formTitle.setFont(new Font("Courier New", Font.BOLD, 18));
+        JLabel formTitle = new JLabel("Login");
+        formTitle.setFont(new Font(AppTheme.FONT_FAMILY, Font.BOLD, 22));
         formTitle.setForeground(AppTheme.getTextColor());
         form.add(formTitle, formGbc);
 
-        // Divider line
         formGbc.gridy++;
-        formGbc.insets = new Insets(10, 0, 15, 0);
-        JLabel divider = new JLabel("════════════════════════════════════════");
-        divider.setFont(new Font("Courier New", Font.PLAIN, 12));
-        divider.setForeground(AppTheme.getMutedTextColor());
-        form.add(divider, formGbc);
+        JLabel helper = AppTheme.mutedLabel("Choose your account type and sign in.");
+        form.add(helper, formGbc);
 
-        // Login Mode
-        formGbc.gridy++;
-        formGbc.insets = new Insets(10, 0, 5, 0);
-        JLabel modeLabel = new JLabel("$ [MODE]");
-        modeLabel.setForeground(AppTheme.getTextColor());
-        modeLabel.setFont(new Font("Courier New", Font.BOLD, 12));
-        form.add(modeLabel, formGbc);
-
-        formGbc.gridy++;
-        formGbc.insets = new Insets(5, 0, 15, 0);
+        addFieldLabel(form, formGbc, "Account type");
         AppTheme.styleInput(loginMode);
         form.add(loginMode, formGbc);
 
-        // Identity Field
-        formGbc.gridy++;
-        formGbc.insets = new Insets(10, 0, 5, 0);
-        JLabel identityLabel = new JLabel("$ [FAYDA_ID]");
-        identityLabel.setForeground(AppTheme.getTextColor());
-        identityLabel.setFont(new Font("Courier New", Font.BOLD, 12));
-        form.add(identityLabel, formGbc);
-
-        formGbc.gridy++;
-        formGbc.insets = new Insets(5, 0, 15, 0);
+        addFieldLabel(form, formGbc, "Fayda ID or admin username");
         AppTheme.styleInput(identityField);
         form.add(identityField, formGbc);
 
-        // Password Field
-        formGbc.gridy++;
-        formGbc.insets = new Insets(10, 0, 5, 0);
-        JLabel passwordLabel = new JLabel("$ [PASSWORD]");
-        passwordLabel.setForeground(AppTheme.getTextColor());
-        passwordLabel.setFont(new Font("Courier New", Font.BOLD, 12));
-        form.add(passwordLabel, formGbc);
-
-        formGbc.gridy++;
-        formGbc.insets = new Insets(5, 0, 25, 0);
+        addFieldLabel(form, formGbc, "Password");
         AppTheme.styleInput(passwordField);
         form.add(passwordField, formGbc);
 
-        // Buttons Panel - Fixed Size
         formGbc.gridy++;
-        formGbc.insets = new Insets(15, 0, 0, 0);
-        formGbc.weightx = 1.0;
-
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new GridLayout(1, 2, 12, 0));
+        formGbc.insets = new Insets(18, 0, 0, 0);
+        JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 12, 0));
         buttonPanel.setBackground(AppTheme.getSurfaceBackground());
-        buttonPanel.setPreferredSize(new Dimension(0, 50));
+        buttonPanel.setMinimumSize(new Dimension(260, 48));
+        buttonPanel.setPreferredSize(new Dimension(320, 48));
 
-        JButton loginBtn = AppTheme.primaryButton("EXECUTE");
-        JButton registerBtn = AppTheme.outlineButton("REGISTER");
-
+        JButton loginBtn = AppTheme.primaryButton("Login");
+        JButton registerBtn = AppTheme.outlineButton("Register");
         loginBtn.addActionListener(e -> login());
         registerBtn.addActionListener(e -> openRegisterFrame());
-
         buttonPanel.add(loginBtn);
         buttonPanel.add(registerBtn);
-
         form.add(buttonPanel, formGbc);
 
         container.add(form, gbc);
         return container;
     }
 
-    public void setLogoImage(String imagePath) {
+    private void addFieldLabel(JPanel form, GridBagConstraints formGbc, String text) {
+        formGbc.gridy++;
+        formGbc.insets = new Insets(14, 0, 3, 0);
+        JLabel label = new JLabel(text);
+        label.setForeground(AppTheme.getTextColor());
+        label.setFont(new Font(AppTheme.FONT_FAMILY, Font.BOLD, 12));
+        form.add(label, formGbc);
+        formGbc.gridy++;
+        formGbc.insets = new Insets(3, 0, 7, 0);
+    }
+
+    private void loadHomeLogo(String imagePath) {
         try {
             File imageFile = new File(imagePath);
             if (imageFile.exists()) {
-                ImageIcon icon = new ImageIcon(imagePath);
-                Image img = icon.getImage().getScaledInstance(80, 80, Image.SCALE_SMOOTH);
-                logoLabel.setIcon(new ImageIcon(img));
+                BufferedImage image = ImageIO.read(imageFile);
+                if (image == null) {
+                    throw new IllegalArgumentException("Unsupported logo image.");
+                }
+                logoLabel.setImage(image);
                 logoLabel.setText("");
-            } else {
-                logoLabel.setText("◆");
-                logoLabel.setFont(new Font("Courier New", Font.BOLD, 60));
-                logoLabel.setForeground(AppTheme.getTextColor());
+                logoLabel.setBackground(AppTheme.getSurfaceBackground());
+                logoLabel.repaint();
+                return;
             }
-        } catch (Exception e) {
-            logoLabel.setText("◆");
-            logoLabel.setFont(new Font("Courier New", Font.BOLD, 60));
-            logoLabel.setForeground(AppTheme.getTextColor());
+        } catch (Exception ignored) {
+            // Keep the built-in mark visible when no admin logo can be loaded.
         }
+        logoLabel.setImage(null);
+        logoLabel.setText("NDVS");
+        logoLabel.setBackground(AppTheme.GOLD_SOFT);
+        logoLabel.repaint();
+    }
+
+    private String homeLogoPath() {
+        String path = preferences.get(AppTheme.HOME_LOGO_PATH_KEY, "");
+        if (path == null || path.isBlank()) {
+            path = Preferences.userNodeForPackage(AdminDashboardFrame.class).get("adminDashboardLogoPath", "");
+            if (path != null && !path.isBlank()) {
+                preferences.put(AppTheme.HOME_LOGO_PATH_KEY, path);
+            }
+        }
+        return path;
+    }
+
+    private void startTypingEffect() {
+        if (typingTimer != null) {
+            typingTimer.stop();
+        }
+        if (typingPlayed) {
+            typingLabel.setText(HERO_LINE);
+            return;
+        }
+        final int[] index = {0};
+        typingTimer = new Timer(65, e -> {
+            if (typingLabel == null) {
+                ((Timer) e.getSource()).stop();
+                return;
+            }
+            if (index[0] >= HERO_LINE.length()) {
+                typingLabel.setText(HERO_LINE);
+                typingPlayed = true;
+                ((Timer) e.getSource()).stop();
+                return;
+            }
+            typingLabel.setText(HERO_LINE.substring(0, index[0]) + (index[0] % 2 == 0 ? "|" : ""));
+            index[0]++;
+        });
+        typingTimer.start();
     }
 
     private void login() {
@@ -374,50 +409,35 @@ public class LoginFrame extends BaseFrame {
     private void openAboutPage() {
         JFrame aboutFrame = new JFrame("About - Voting & Democracy");
         aboutFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        aboutFrame.setSize(1000, 700);
+        aboutFrame.setSize(980, 680);
         aboutFrame.setLocationRelativeTo(this);
         aboutFrame.getContentPane().setBackground(AppTheme.getCanvasBackground());
 
-        JPanel content = new JPanel();
+        JPanel content = new JPanel(new BorderLayout(22, 22));
         content.setBackground(AppTheme.getCanvasBackground());
-        content.setLayout(new BorderLayout(20, 20));
-        content.setBorder(new EmptyBorder(30, 30, 30, 30));
+        content.setBorder(new EmptyBorder(34, 40, 34, 40));
 
-        JTextArea textArea = new JTextArea();
-        textArea.setEditable(false);
-        textArea.setFont(new Font("Courier New", Font.PLAIN, 12));
-        textArea.setLineWrap(true);
-        textArea.setWrapStyleWord(true);
-        textArea.setBackground(AppTheme.getSurfaceBackground());
-        textArea.setForeground(AppTheme.getTextColor());
-        textArea.setText(
-            "$ cat about.voting\n" +
-            "════════════════════════════════════════════════════════════\n\n" +
-            "[INFO] ABOUT VOTING & DEMOCRACY\n\n" +
-            "Democracy is a system where power is vested in the people,\n" +
-            "who exercise that power directly or through elected representatives.\n" +
-            "The foundation of democracy is the right to vote.\n\n" +
-            "[SECTION] KEY PRINCIPLES OF DEMOCRACY:\n" +
-            "  ► Freedom of Speech and Expression\n" +
-            "  ► Right to Vote and Participate\n" +
-            "  ► Rule of Law\n" +
-            "  ► Transparency and Accountability\n" +
-            "  ► Separation of Powers\n\n" +
-            "[SECTION] THE IMPORTANCE OF VOTING:\n" +
-            "Voting enables citizens to have a voice in government decisions\n" +
-            "and shape the future of their nation. Regular and fair elections\n" +
-            "are essential for maintaining democratic values.\n\n" +
-            "[SECTION] ELECTORAL INTEGRITY:\n" +
-            "A secure voting system ensures that every vote is counted\n" +
-            "accurately and fairly. This application provides transparency,\n" +
-            "security, and efficiency in the voting process.\n\n" +
-            "[STATUS] Ready for execution..."
-        );
+        JTextPane textPane = new JTextPane();
+        textPane.setEditable(false);
+        textPane.setContentType("text/html");
+        textPane.setBackground(AppTheme.getSurfaceBackground());
+        textPane.setBorder(new EmptyBorder(24, 30, 24, 30));
+        textPane.setText("""
+                <html><body style='font-family:%s; font-size:14px; color:%s; line-height:1.65;'>
+                <div style='letter-spacing:1px; color:%s; font-size:11px; font-weight:bold;'>ABOUT THE PLATFORM</div>
+                <h1 style='color:%s; margin:6px 0 10px 0; font-size:28px;'>A clearer way to protect every vote.</h1>
+                <p style='font-size:15px;'>The National Digital Voting System gives voters a calm, secure place to participate and gives election teams a clean workspace for registration, ballots, candidates, and live monitoring.</p>
+                <h2 style='color:%s; margin-top:22px;'>Built around trust</h2>
+                <p>Good elections need participation, transparency, accountability, and a process citizens can understand. This system keeps those ideas visible from login to final result monitoring.</p>
+                <h2 style='color:%s; margin-top:22px;'>Designed for real election work</h2>
+                <p>Admins can manage elections, parties, candidates, officers, and live results while voters see a focused ballot experience with candidate photos and party symbols.</p>
+                </body></html>
+                """.formatted(AppTheme.FONT_FAMILY, hex(AppTheme.getTextColor()), hex(AppTheme.getPrimaryAccent()),
+                hex(AppTheme.getPrimaryAccent()), hex(AppTheme.getPrimaryAccent()), hex(AppTheme.getPrimaryAccent())));
 
-        JScrollPane scrollPane = AppTheme.scrollPane(textArea);
-        content.add(scrollPane, BorderLayout.CENTER);
+        content.add(AppTheme.scrollPane(textPane), BorderLayout.CENTER);
 
-        JButton closeBtn = AppTheme.primaryButton("CLOSE");
+        JButton closeBtn = AppTheme.primaryButton("Close");
         closeBtn.addActionListener(e -> aboutFrame.dispose());
         JPanel buttonPanel = new JPanel();
         buttonPanel.setBackground(AppTheme.getCanvasBackground());
@@ -431,93 +451,137 @@ public class LoginFrame extends BaseFrame {
     private void openContactPage() {
         JFrame contactFrame = new JFrame("Contact Us");
         contactFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        contactFrame.setSize(900, 650);
+        contactFrame.setSize(900, 600);
         contactFrame.setLocationRelativeTo(this);
         contactFrame.getContentPane().setBackground(AppTheme.getCanvasBackground());
 
-        JPanel content = new JPanel();
-        content.setBackground(AppTheme.getCanvasBackground());
+        JPanel content = AppTheme.cardPanel();
         content.setLayout(new GridBagLayout());
-        content.setBorder(new EmptyBorder(30, 30, 30, 30));
+        content.setBorder(new EmptyBorder(36, 46, 36, 46));
+        content.setPreferredSize(new Dimension(720, 470));
 
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 0, 10, 0);
+        gbc.insets = new Insets(8, 0, 8, 0);
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.weightx = 1.0;
 
-        JLabel title = new JLabel("$ contact -i nebe@voting.gov");
-        title.setFont(new Font("Courier New", Font.BOLD, 20));
-        title.setForeground(AppTheme.getTextColor());
+        JLabel title = AppTheme.title("Contact NEBE");
+        title.setFont(new Font(AppTheme.FONT_FAMILY, Font.BOLD, 30));
         content.add(title, gbc);
 
         gbc.gridy++;
-        JLabel divider = new JLabel("════════════════════════════════════════");
-        divider.setFont(new Font("Courier New", Font.PLAIN, 12));
-        divider.setForeground(AppTheme.getMutedTextColor());
-        content.add(divider, gbc);
+        JLabel intro = new JLabel("<html><b>Election support contact information</b><br>Reach the support desk for voting, registration, and election operations assistance.</html>");
+        intro.setFont(new Font(AppTheme.FONT_FAMILY, Font.PLAIN, 14));
+        intro.setForeground(AppTheme.getMutedTextColor());
+        content.add(intro, gbc);
 
-        gbc.gridy++;
-        gbc.insets = new Insets(20, 0, 10, 0);
-        JLabel emailTitle = new JLabel("[EMAIL]");
-        emailTitle.setFont(new Font("Courier New", Font.BOLD, 12));
-        emailTitle.setForeground(AppTheme.getTextColor());
-        content.add(emailTitle, gbc);
-
-        gbc.gridy++;
-        gbc.insets = new Insets(5, 0, 15, 0);
-        JTextField emailField = new JTextField("contact@nebe.gov.et");
-        emailField.setEditable(false);
-        emailField.setFont(new Font("Courier New", Font.PLAIN, 12));
-        emailField.setBackground(AppTheme.getSurfaceBackground());
-        emailField.setForeground(AppTheme.getTextColor());
-        emailField.setBorder(new EmptyBorder(8, 12, 8, 12));
-        content.add(emailField, gbc);
-
-        gbc.gridy++;
-        gbc.insets = new Insets(20, 0, 10, 0);
-        JLabel phoneTitle = new JLabel("[PHONE]");
-        phoneTitle.setFont(new Font("Courier New", Font.BOLD, 12));
-        phoneTitle.setForeground(AppTheme.getTextColor());
-        content.add(phoneTitle, gbc);
-
-        gbc.gridy++;
-        gbc.insets = new Insets(5, 0, 15, 0);
-        JTextField phoneField = new JTextField("+251 116 45 9000");
-        phoneField.setEditable(false);
-        phoneField.setFont(new Font("Courier New", Font.PLAIN, 12));
-        phoneField.setBackground(AppTheme.getSurfaceBackground());
-        phoneField.setForeground(AppTheme.getTextColor());
-        phoneField.setBorder(new EmptyBorder(8, 12, 8, 12));
-        content.add(phoneField, gbc);
-
-        gbc.gridy++;
-        gbc.insets = new Insets(20, 0, 10, 0);
-        JLabel addressTitle = new JLabel("[ADDRESS]");
-        addressTitle.setFont(new Font("Courier New", Font.BOLD, 12));
-        addressTitle.setForeground(AppTheme.getTextColor());
-        content.add(addressTitle, gbc);
-
-        gbc.gridy++;
-        gbc.insets = new Insets(5, 0, 25, 0);
-        JTextArea addressArea = new JTextArea("National Election Board of Ethiopia\nAddis Ababa, Ethiopia\n[HOURS] 8:00 AM - 5:00 PM (MON-FRI)");
-        addressArea.setEditable(false);
-        addressArea.setFont(new Font("Courier New", Font.PLAIN, 12));
-        addressArea.setBackground(AppTheme.getSurfaceBackground());
-        addressArea.setForeground(AppTheme.getTextColor());
-        addressArea.setBorder(new EmptyBorder(8, 12, 8, 12));
-        addressArea.setLineWrap(true);
-        addressArea.setWrapStyleWord(true);
-        content.add(addressArea, gbc);
+        addReadOnlyField(content, gbc, "Email", "contact@nebe.gov.et");
+        addReadOnlyField(content, gbc, "Phone", "+251 116 45 9000");
+        addReadOnlyField(content, gbc, "Address", "National Election Board of Ethiopia, Addis Ababa, Ethiopia");
+        addReadOnlyField(content, gbc, "Hours", "8:00 AM - 5:00 PM (Monday-Friday)");
 
         gbc.gridy++;
         gbc.insets = new Insets(20, 0, 0, 0);
-        JButton closeBtn = AppTheme.primaryButton("CLOSE");
+        JButton closeBtn = AppTheme.primaryButton("Close");
         closeBtn.addActionListener(e -> contactFrame.dispose());
         content.add(closeBtn, gbc);
 
-        contactFrame.setContentPane(content);
+        JPanel wrapper = new JPanel(new GridBagLayout());
+        wrapper.setBackground(AppTheme.getCanvasBackground());
+        wrapper.setBorder(new EmptyBorder(26, 26, 26, 26));
+        wrapper.add(content, new GridBagConstraints());
+        contactFrame.setContentPane(wrapper);
         contactFrame.setVisible(true);
+    }
+
+    private void addReadOnlyField(JPanel content, GridBagConstraints gbc, String labelText, String value) {
+        gbc.gridy++;
+        gbc.insets = new Insets(18, 0, 4, 0);
+        JLabel label = new JLabel(labelText);
+        label.setFont(new Font(AppTheme.FONT_FAMILY, Font.BOLD, 12));
+        label.setForeground(AppTheme.getTextColor());
+        content.add(label, gbc);
+
+        gbc.gridy++;
+        gbc.insets = new Insets(0, 0, 4, 0);
+        JTextField field = new JTextField(value);
+        field.setEditable(false);
+        AppTheme.styleInput(field);
+        content.add(field, gbc);
+    }
+
+    private String hex(Color color) {
+        return String.format("#%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue());
+    }
+
+    private void showPortalQr() {
+        try {
+            BufferedImage qr = QRGenerator.generate(NATIONAL_PORTAL_URL, 280);
+            JLabel qrLabel = new JLabel(new ImageIcon(qr));
+            qrLabel.setHorizontalAlignment(SwingConstants.CENTER);
+
+            JLabel title = new JLabel("National voting portal", SwingConstants.CENTER);
+            title.setFont(new Font(AppTheme.FONT_FAMILY, Font.BOLD, 20));
+            title.setForeground(AppTheme.getTextColor());
+
+            JLabel url = new JLabel(NATIONAL_PORTAL_URL, SwingConstants.CENTER);
+            url.setFont(new Font(AppTheme.FONT_FAMILY, Font.PLAIN, 13));
+            url.setForeground(AppTheme.getMutedTextColor());
+
+            JPanel panel = AppTheme.cardPanel();
+            panel.setLayout(new BorderLayout(0, 14));
+            panel.setBorder(new EmptyBorder(22, 26, 22, 26));
+            panel.add(title, BorderLayout.NORTH);
+            panel.add(qrLabel, BorderLayout.CENTER);
+            panel.add(url, BorderLayout.SOUTH);
+
+            JOptionPane.showMessageDialog(this, panel, "Portal QR", JOptionPane.PLAIN_MESSAGE);
+        } catch (Exception ex) {
+            showError(ex);
+        }
+    }
+
+    private static final class CircularLogoLabel extends JLabel {
+        private BufferedImage image;
+
+        private CircularLogoLabel() {
+            setOpaque(false);
+            setHorizontalAlignment(SwingConstants.CENTER);
+            setVerticalAlignment(SwingConstants.CENTER);
+        }
+
+        private void setImage(BufferedImage image) {
+            this.image = image;
+            repaint();
+        }
+
+        @Override
+        protected void paintComponent(Graphics graphics) {
+            Graphics2D g2 = (Graphics2D) graphics.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            int size = Math.min(getWidth(), getHeight()) - 6;
+            int x = (getWidth() - size) / 2;
+            int y = (getHeight() - size) / 2;
+            Ellipse2D circle = new Ellipse2D.Double(x, y, size, size);
+            g2.setColor(getBackground() == null ? AppTheme.GOLD_SOFT : getBackground());
+            g2.fill(circle);
+            if (image != null) {
+                Shape oldClip = g2.getClip();
+                g2.setClip(circle);
+                double scale = Math.max(size / (double) image.getWidth(), size / (double) image.getHeight());
+                int width = Math.max(1, (int) Math.round(image.getWidth() * scale));
+                int height = Math.max(1, (int) Math.round(image.getHeight() * scale));
+                g2.drawImage(image, x + (size - width) / 2, y + (size - height) / 2, width, height, null);
+                g2.setClip(oldClip);
+            } else {
+                super.paintComponent(graphics);
+            }
+            g2.setStroke(new BasicStroke(3f));
+            g2.setColor(AppTheme.getPrimaryAccent());
+            g2.draw(circle);
+            g2.dispose();
+        }
     }
 }

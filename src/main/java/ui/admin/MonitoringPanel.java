@@ -7,13 +7,10 @@ import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.data.category.DefaultCategoryDataset;
 import ui.shared.AppTheme;
-import util.PDFExporter;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.nio.file.Path;
-import java.util.List;
 
 class MonitoringPanel extends JPanel {
     private final ElectionDAO electionDAO = new ElectionDAO();
@@ -33,16 +30,14 @@ class MonitoringPanel extends JPanel {
         copy.setOpaque(false);
         copy.add(AppTheme.eyebrow("Live results"));
         copy.add(AppTheme.sectionTitle("Live election monitoring"));
-        copy.add(AppTheme.mutedLabel("Track vote totals, refresh the chart, and export a signed PDF result report."));
+        copy.add(AppTheme.mutedLabel("Track vote totals and refresh the live candidate ranking chart."));
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         actions.setOpaque(false);
         JButton refresh = AppTheme.secondaryButton("Refresh");
-        JButton export = AppTheme.primaryButton("Export PDF");
         AppTheme.styleInput(electionBox);
         actions.add(new JLabel("Election"));
         actions.add(electionBox);
         actions.add(refresh);
-        actions.add(export);
         controls.add(copy, BorderLayout.NORTH);
         controls.add(actions, BorderLayout.CENTER);
         JFreeChart chart = ChartFactory.createBarChart("Live Candidate Rankings", "Candidate", "Votes", dataset);
@@ -56,7 +51,6 @@ class MonitoringPanel extends JPanel {
         add(controls, BorderLayout.NORTH);
         add(chartPanel, BorderLayout.CENTER);
         refresh.addActionListener(e -> refresh());
-        export.addActionListener(e -> exportPdf());
         loadElections();
         timer = new Timer(3000, e -> refresh());
         timer.start();
@@ -96,18 +90,6 @@ class MonitoringPanel extends JPanel {
             }
         } catch (Exception ignored) {
             // Timer refresh stays quiet until the operator selects a valid election.
-        }
-    }
-
-    private void exportPdf() {
-        try {
-            int electionId = selectedElectionId();
-            List<ResultDAO.ResultRow> rows = resultDAO.findResults(electionId);
-            Path output = Path.of("src/main/resources/reports/election-" + electionId + "-results.pdf");
-            new PDFExporter().exportElectionResults("Election " + electionId, rows, output);
-            JOptionPane.showMessageDialog(this, "Exported to " + output.toAbsolutePath());
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage());
         }
     }
 }
