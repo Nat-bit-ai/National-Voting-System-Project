@@ -1,12 +1,16 @@
 package ui.shared;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.AbstractBorder;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.plaf.ColorUIResource;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.awt.geom.RoundRectangle2D;
+import java.io.IOException;
+import java.net.URL;
 
 public final class AppTheme {
     public static final Color PALETTE_BLACK = new Color(0x000000);
@@ -55,6 +59,7 @@ public final class AppTheme {
     private static final Font TITLE_FONT = new Font(FONT_FAMILY, Font.BOLD, 24);
     private static final Font HERO_FONT = new Font(FONT_FAMILY, Font.BOLD, 32);
     private static final Font SECTION_FONT = new Font(FONT_FAMILY, Font.BOLD, 18);
+    private static final int THEME_ICON_SIZE = 22;
 
     static {
         updatePalette();
@@ -209,14 +214,15 @@ public final class AppTheme {
     public static JButton themeToggleButton() {
         JButton button = themeIconButton();
         button.addActionListener(e -> {
-            button.setText(themeIcon());
+            applyThemeIcon(button);
             button.setToolTipText(themeTooltip());
         });
         return button;
     }
 
     public static JButton themeIconButton() {
-        JButton button = secondaryButton(themeIcon());
+        JButton button = secondaryButton("");
+        applyThemeIcon(button);
         button.setToolTipText(themeTooltip());
         button.setFont(new Font("Segoe UI Symbol", Font.BOLD, 18));
         button.setMinimumSize(new Dimension(48, 42));
@@ -230,6 +236,39 @@ public final class AppTheme {
 
     public static String themeTooltip() {
         return darkMode ? "Switch to light mode" : "Switch to dark mode";
+    }
+
+    private static void applyThemeIcon(JButton button) {
+        Icon icon = themeIconImage();
+        button.setIcon(icon);
+        button.setText(icon == null ? themeIcon() : "");
+    }
+
+    private static Icon themeIconImage() {
+        String resource = darkMode ? "/icons/sun.png" : "/icons/moon.png";
+        URL url = AppTheme.class.getResource(resource);
+        if (url == null) {
+            return null;
+        }
+
+        try {
+            BufferedImage source = ImageIO.read(url);
+            if (source == null) {
+                return null;
+            }
+            BufferedImage tinted = new BufferedImage(THEME_ICON_SIZE, THEME_ICON_SIZE, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g2 = tinted.createGraphics();
+            g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.drawImage(source, 0, 0, THEME_ICON_SIZE, THEME_ICON_SIZE, null);
+            g2.setComposite(AlphaComposite.SrcAtop);
+            g2.setColor(INK);
+            g2.fillRect(0, 0, THEME_ICON_SIZE, THEME_ICON_SIZE);
+            g2.dispose();
+            return new ImageIcon(tinted);
+        } catch (IOException ex) {
+            return null;
+        }
     }
 
     public static JLabel title(String text) {
